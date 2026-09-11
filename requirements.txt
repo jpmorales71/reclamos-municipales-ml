@@ -1,0 +1,23 @@
+# Entrenamiento del modelo (src/train.py) y EDA (notebooks/exploracion.ipynb)
+pandas==3.0.5
+scikit-learn==1.9.1
+matplotlib==3.11.1
+seaborn==0.13.2
+joblib==1.6.0
+
+# Notebook (EDA)
+jupyter==1.1.1
+ipykernel==7.3.0
+
+# API (src/api.py)
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+pydantic==2.13.5
+
+# Tests (tests/test_api.py)
+pytest==9.1.1
+httpx==0.28.1
+
+# Dashboard (src/dashboard.py)
+streamlit==1.63.0
+requests==2.34.2

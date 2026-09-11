@@ -1,0 +1,50 @@
+# Dos servicios independientes (api y dashboard), tal como pide CLAUDE.md,
+# construidos a partir de la misma imagen (un unico Dockerfile: entrenar el
+# modelo y correr la API o el dashboard son variaciones del mismo entorno,
+# no dos entornos distintos). Solo "api" declara `build:`; "dashboard"
+# reutiliza la misma imagen ya construida (mismo tag), asi el entrenamiento
+# de train.py corre una sola vez por build, no dos.
+#
+# Uso:
+#   docker compose up --build   # primera vez, o tras cambiar src/ o requirements.txt
+#   docker compose up           # las veces siguientes, reutiliza la imagen
+#
+# API:       http://localhost:8080/docs
+# Dashboard: http://localhost:8501
+
+services:
+  api:
+    build: .
+    image: reclamos-municipales-ml:latest
+    container_name: reclamos-api
+    ports:
+      # Puerto 8000 del host mapeado a 8080 porque en esta maquina ya hay
+      # otro proceso escuchando en 8000. El contenedor sigue escuchando
+      # internamente en 8000 (ver PORT abajo); "dashboard" lo sigue
+      # resolviendo como http://api:8000 en la red interna de compose.
+      - "8080:8000"
+    environment:
+      - PORT=8000
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  dashboard:
+    image: reclamos-municipales-ml:latest
+    container_name: reclamos-dashboard
+    command: ["streamlit", "run", "src/dashboard.py", "--server.address=0.0.0.0", "--server.port=8501"]
+    ports:
+      - "8501:8501"
+    environment:
+      # Nombre del servicio "api" como hostname: Docker Compose crea una red
+      # interna donde los servicios se resuelven por su nombre. Nunca se
+      # hardcodea una URL de produccion aqui.
+      - API_URL=http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped

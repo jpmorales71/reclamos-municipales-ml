@@ -1,0 +1,90 @@
+{
+  "generated_at": "2026-09-11T11:12:45.783511+00:00",
+  "dataset": {
+    "n_samples": 700,
+    "n_train": 560,
+    "n_test": 140,
+    "categories": [
+      "Alumbrado Público",
+      "Aseo y Ornato",
+      "Permisos y Patentes Comerciales",
+      "Seguridad Ciudadana",
+      "Vialidad y Pavimentación",
+      "Áreas Verdes"
+    ],
+    "test_size": 0.2,
+    "random_state": 42
+  },
+  "model_selection": {
+    "search_strategy": "GridSearchCV con validacion cruzada estratificada, optimizando f1_macro. Se comparan MultinomialNB (alpha) y LogisticRegression (C) sobre TF-IDF.",
+    "best_estimator": "MultinomialNB",
+    "best_params": {
+      "clf": "MultinomialNB()",
+      "clf__alpha": 0.1,
+      "tfidf__min_df": 1,
+      "tfidf__ngram_range": [
+        1,
+        1
+      ]
+    },
+    "best_cv_f1_macro": 0.9964900122794859
+  },
+  "test_metrics": {
+    "accuracy": 1.0,
+    "classification_report": {
+      "Alumbrado Público": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 24.0
+      },
+      "Aseo y Ornato": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 23.0
+      },
+      "Permisos y Patentes Comerciales": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 23.0
+      },
+      "Seguridad Ciudadana": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 23.0
+      },
+      "Vialidad y Pavimentación": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 23.0
+      },
+      "Áreas Verdes": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 24.0
+      },
+      "accuracy": 1.0,
+      "macro avg": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 140.0
+      },
+      "weighted avg": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 140.0
+      }
+    }
+  },
+  "metricas_no_aplicables": {
+    "RMSE": "No aplica: el Root Mean Squared Error mide el error entre valores numericos continuos (problemas de regresion). Este proyecto es de clasificacion multiclase sobre categorias discretas sin orden natural, por lo que RMSE no tiene una interpretacion valida aqui.",
+    "MAE": "No aplica por la misma razon que RMSE: el Mean Absolute Error tambien esta definido para variables numericas continuas. Las metricas correctas para este problema son precision, recall, F1-score (por categoria y macro/weighted) y la matriz de confusion, incluidas en 'test_metrics'."
+  }
+}

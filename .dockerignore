@@ -1,0 +1,21 @@
+# Entorno local (se reinstala limpio dentro de la imagen)
+.venv/
+venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+
+# Control de versiones
+.git/
+.gitignore
+
+# No se necesitan en el contenedor: se generan en el build (models/) o son
+# solo para desarrollo local (notebooks/, tests/)
+models/
+notebooks/
+tests/
+
+# Documentacion (no afecta el funcionamiento de la app)
+README.md
+CLAUDE.md

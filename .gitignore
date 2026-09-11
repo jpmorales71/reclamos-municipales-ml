@@ -1,0 +1,21 @@
+# Entorno virtual
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Pytest
+.pytest_cache/
+
+# Modelos y artefactos pesados (se regeneran con src/train.py)
+models/*.pkl
+
+# Entorno / secretos
+.env
+
+# SO
+.DS_Store
+Thumbs.db
