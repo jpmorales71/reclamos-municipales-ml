@@ -64,6 +64,24 @@ El modelo clasifica cada reclamo en una de estas 6 categorías:
 > menor. Este dataset es adecuado para demostrar el pipeline completo de ML de punta
 > a punta (que es el objetivo de la actividad), no para certificar precisión en
 > producción.
+>
+> **Caso real detectado y corregido:** durante pruebas manuales del dashboard
+> desplegado, el reclamo *"en la avenida frente a mi casa hay un hoyo gigante"* se
+> clasificó como *Alumbrado Público* en vez de *Vialidad y Pavimentación*. La causa
+> raíz: la frase "frente a mi casa" aparecía en el dataset original únicamente en
+> plantillas de Alumbrado Público (9/9 casos, ej. *"el poste que está frente a mi
+> casa..."*), y la palabra "casa" nunca aparecía en Aseo y Ornato, Vialidad y
+> Pavimentación ni Áreas Verdes — el modelo aprendió una correlación espuria por
+> diseño de plantillas, no una relación semántica real. Además "avenida" no
+> aparecía en ningún registro (palabra fuera de vocabulario, ignorada por el
+> modelo). Se corrigió reescribiendo 8 registros existentes (sin agregar ni quitar
+> filas, el balance de categorías no cambió) para introducir "avenida" y "frente a
+> mi casa" también en esas tres categorías, y se reentrenó. El caso reportado ahora
+> clasifica correctamente (46% Vialidad y Pavimentación vs. 21% Alumbrado Público,
+> antes era 15% vs. 45%). Este episodio es en sí mismo evidencia de la limitación
+> señalada arriba: un dataset sintético con plantillas acotadas puede introducir
+> sesgos que no reflejan relaciones semánticas reales, y hace falta revisión manual
+> con casos fuera de las plantillas para detectarlos.
 
 ## Diseño de la solución ML
 
