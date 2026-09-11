@@ -1,0 +1,22 @@
+# Blueprint de Render para la API (FastAPI). Render detecta este archivo
+# automaticamente al conectar el repositorio y propone crear el servicio
+# con esta configuracion (Infrastructure as Code, evita configurar todo a
+# mano en el dashboard web).
+#
+# El build usa el Dockerfile de la raiz del repo: instala dependencias,
+# copia data/ + src/ y entrena el modelo (RUN python src/train.py) durante
+# el build de la imagen, igual que en docker-compose.yml.
+#
+# Render inyecta la variable de entorno PORT automaticamente; src/api.py ya
+# la lee (os.getenv("PORT", "8000")) y escucha en 0.0.0.0, por lo que no
+# hace falta configuracion adicional para el puerto.
+services:
+  - type: web
+    name: reclamos-municipales-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
