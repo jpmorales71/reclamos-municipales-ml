@@ -82,6 +82,33 @@ El modelo clasifica cada reclamo en una de estas 6 categorías:
 > señalada arriba: un dataset sintético con plantillas acotadas puede introducir
 > sesgos que no reflejan relaciones semánticas reales, y hace falta revisión manual
 > con casos fuera de las plantillas para detectarlos.
+>
+> **Prueba adicional con vocabulario fuera del dataset:** se probaron 14 reclamos
+> parafraseados, con palabras que no aparecen en `data/reclamos.csv`, contra la API
+> en producción. Resultado: 10/12 casos no ambiguos clasificados correctamente
+> (83%), y los 2 casos armados a propósito como ambiguos (un saludo sin
+> información, y un reclamo por perros abandonados que podría ser tanto Seguridad
+> Ciudadana como Áreas Verdes) obtuvieron confianza baja (25-33%) en vez de una
+> respuesta segura pero arbitraria — señal de buena calibración. Los 2 fallos
+> reales fueron, a diferencia del caso de arriba, simples brechas de vocabulario
+> (no una correlación espuria puntual):
+> - *"unos cabros rayaron toda la muralla del jardín infantil con spray"*
+>   (grafiti, categoría real: Aseo y Ornato) → clasificado como *Vialidad y
+>   Pavimentación* (59%). Las plantillas de Aseo dicen "rayado (graffiti)... en el
+>   **muro**... sin que lo **limpien**"; ninguna usa "rayaron", "muralla" ni
+>   "spray".
+> - *"el semáforo... está pegado en rojo... se arma un taco terrible"* (categoría
+>   real: Vialidad y Pavimentación) → clasificado como *Aseo y Ornato*, con
+>   confianza muy baja (37%, casi al azar). Las plantillas de Vialidad dicen
+>   "el semáforo... lleva N días **malo**... generando **tacos y accidentes**";
+>   "pegado en rojo" no aparece nunca.
+>
+> Se optó por **no** parchear el dataset para estos dos casos puntuales: a
+> diferencia del caso "frente a mi casa" (una correlación perfecta y espuria,
+> fácil de aislar y corregir sin tocar el resto del dataset), esto es la
+> manifestación esperada y genérica de un vocabulario acotado por plantillas —
+> intentar cubrir cada sinónimo posible requeriría rehacer el dataset, no un
+> ajuste puntual.
 
 ## Diseño de la solución ML
 
