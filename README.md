@@ -109,6 +109,30 @@ El modelo clasifica cada reclamo en una de estas 6 categorías:
 > manifestación esperada y genérica de un vocabulario acotado por plantillas —
 > intentar cubrir cada sinónimo posible requeriría rehacer el dataset, no un
 > ajuste puntual.
+>
+> **Prueba adicional con errores ortográficos fonéticos extremos:** se probaron
+> 12 reclamos con ortografía fonética agresiva (k/z/b en vez de c-qu/c-s/v, letras
+> dobladas, tildes y letras finales omitidas — mucho más severo que las
+> abreviaturas coloquiales del dataset original) contra la API en producción.
+> Resultado: **9/12 correctos (75%)**, con confianza razonable en la mayoría
+> (41-95%). La causa de los 3 fallos: `text_utils.normalize_text` solo aplica
+> minúsculas, elimina tildes y quita puntuación — **no hay corrector ortográfico
+> ni stemmer**, así que cada palabra mal escrita es, para el TF-IDF, un token
+> completamente distinto de su forma correcta ("kasa" ≠ "casa"). Cuando el error
+> cae sobre palabras poco relevantes, sobrevive suficiente señal de las palabras
+> intactas (por eso 9 casos con errores igual de agresivos salieron bien); cuando
+> cae sobre casi todas las palabras distintivas de la categoría a la vez (ej.
+> "almasen", "eskina", "bende", "serbesa", "kabros chikos" en vez de "almacén",
+> "esquina", "vende", "cerveza", "cabros chicos"), no queda ninguna palabra ancla
+> reconocible y la clasificación falla o queda con confianza muy baja (32-63% en
+> los 3 casos).
+>
+> A diferencia de los dos hallazgos anteriores, esto no es un problema del
+> dataset sino de la arquitectura del pipeline elegida (TF-IDF sin normalización
+> morfológica). Corregirlo de fondo implicaría agregar un corrector ortográfico o
+> stemmer al pipeline de `text_utils.py` — un cambio de diseño, no un ajuste de
+> datos, que quedó fuera de alcance de esta iteración y se documenta aquí como
+> limitación conocida en vez de implementarse sin discutirlo primero.
 
 ## Diseño de la solución ML
 
