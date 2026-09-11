@@ -17,6 +17,7 @@ modelo de Machine Learning en vez de un proceso manual lento e inconsistente.
 - [Estructura del repositorio](#estructura-del-repositorio)
 - [Instalación y uso](#instalación-y-uso)
 - [Cómo correr el proyecto con Docker](#cómo-correr-el-proyecto-con-docker)
+- [Despliegue en producción](#despliegue-en-producción)
 - [Estado del proyecto](#estado-del-proyecto)
 - [Cómo se cumple la rúbrica](#cómo-se-cumple-la-rúbrica)
 
@@ -404,6 +405,36 @@ docker compose down
 > tu máquina el `8000` está libre, podés volver a `"8000:8000"` sin ningún
 > otro cambio.
 
+## Despliegue en producción
+
+El proyecto está desplegado en dos servicios independientes, sin URLs
+hardcodeadas (el dashboard lee la API por la variable de entorno `API_URL`,
+tal como en `docker-compose.yml`):
+
+- **API (FastAPI)** en [Render](https://render.com), a partir del
+  `Dockerfile` del repo, definido como *Infrastructure as Code* en
+  [`render.yaml`](render.yaml):
+  **https://reclamos-municipales-api.onrender.com** —
+  [`/docs`](https://reclamos-municipales-api.onrender.com/docs) (Swagger).
+- **Dashboard (Streamlit)** en
+  [Streamlit Community Cloud](https://streamlit.io/cloud), apuntando a
+  `src/dashboard.py`, con `API_URL` configurada como *Secret* apuntando a la
+  URL de Render de arriba:
+  **https://reclamos-municipales-ml.streamlit.app**
+
+> **Nota — free tier de Render:** el servicio se "duerme" tras ~15 minutos
+> sin tráfico. La primera request luego de ese período tarda entre 30 y 50
+> segundos en responder (cold start) mientras el contenedor arranca de
+> nuevo; las siguientes son inmediatas. El dashboard muestra un spinner
+> durante la espera, no un error.
+>
+> Ambos despliegues se verificaron end-to-end: `GET /health` responde
+> `{"status":"ok","model_loaded":true}`, `GET /metrics` devuelve el reporte
+> completo, y una clasificación de prueba ("hace 2 semanas que no anda
+> ningún poste de luz...") se resolvió correctamente como *Alumbrado
+> Público* con 99.7% de confianza, tanto desde la API directamente como
+> desde el dashboard en vivo.
+
 ## Estado del proyecto
 
 - [x] Dataset sintético (`data/reclamos.csv`)
@@ -414,7 +445,7 @@ docker compose down
 - [x] Dashboard Streamlit (`src/dashboard.py`)
 - [x] Prueba de carga documentada (`tests/load_test.py`)
 - [x] Dockerfile + docker-compose.yml (probado end-to-end con Docker real, ver [Cómo correr el proyecto con Docker](#cómo-correr-el-proyecto-con-docker))
-- [ ] Despliegue (API en Render, dashboard en Streamlit Community Cloud)
+- [x] Despliegue (API en [Render](https://reclamos-municipales-api.onrender.com), dashboard en [Streamlit Community Cloud](https://reclamos-municipales-ml.streamlit.app), ver [Despliegue en producción](#despliegue-en-producción))
 
 Esta sección se irá marcando a medida que se completen los pasos siguientes del
 proyecto.
