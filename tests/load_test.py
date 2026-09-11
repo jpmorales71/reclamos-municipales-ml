@@ -41,29 +41,48 @@ SAMPLE_TEXTS = [
 ]
 
 
-def send_request(api_url: str, texto: str) -> tuple[float, int]:
+def send_request(session: requests.Session, api_url: str, texto: str) -> tuple[float, int]:
     """Envia un POST /predict y devuelve (tiempo_en_segundos, status_code).
 
     Nunca lanza: si la request falla (timeout, conexion rechazada, etc.) se
     devuelve status_code=-1 para que se contabilice como error.
+
+    Recibe una `requests.Session` ya creada (en vez de usar `requests.post`,
+    que crea una sesion nueva en cada llamada) porque en Windows cada
+    `Session` nueva dispara una deteccion de proxy del sistema via WinHTTP
+    que puede tardar del orden de 1-2 segundos -- con `requests.post` esto se
+    pagaba en *cada una* de las N requests, inflando la latencia medida por
+    ~100x y ocultando por completo el tiempo real de inferencia del modelo.
+    Reutilizar una Session (cuyo pool de conexiones de urllib3 es seguro para
+    uso concurrente entre threads) evita ese costo y además reutiliza
+    conexiones TCP, que es lo que se quiere medir en una prueba de carga.
     """
     start = time.perf_counter()
     try:
-        response = requests.post(f"{api_url}/predict", json={"texto": texto}, timeout=30)
+        response = session.post(f"{api_url}/predict", json={"texto": texto}, timeout=30)
         return time.perf_counter() - start, response.status_code
     except requests.exceptions.RequestException:
         return time.perf_counter() - start, -1
 
 
-def run_load_test(api_url: str, n_requests: int, concurrency: int) -> dict:
+def run_load_test(session: requests.Session, api_url: str, n_requests: int, concurrency: int) -> dict:
     """Dispara `n_requests` contra /predict con el nivel de concurrencia dado."""
     textos = [SAMPLE_TEXTS[i % len(SAMPLE_TEXTS)] for i in range(n_requests)]
     tiempos_ms: list[float] = []
     errores = 0
 
-    inicio_total = time.perf_counter()
     with ThreadPoolExecutor(max_workers=concurrency) as executor:
-        futures = [executor.submit(send_request, api_url, texto) for texto in textos]
+        # Warm-up: cada worker thread nuevo que crea ThreadPoolExecutor paga,
+        # en la primera conexion HTTP que hace, un costo fijo de entre 1 y 2
+        # segundos ajeno a la API (en Windows, la resolucion de proxy del
+        # sistema via WinHTTP). Sin este warm-up, ese costo se mide como si
+        # fuera latencia de /predict y contamina p95/max con "concurrency"
+        # outliers de ~2s que no tienen nada que ver con el modelo. Se
+        # ejercita cada thread una vez, fuera del cronometro, antes de medir.
+        list(executor.map(lambda _: send_request(session, api_url, textos[0]), range(concurrency)))
+
+        inicio_total = time.perf_counter()
+        futures = [executor.submit(send_request, session, api_url, texto) for texto in textos]
         for future in as_completed(futures):
             elapsed, status_code = future.result()
             tiempos_ms.append(elapsed * 1000)
@@ -110,8 +129,13 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    # Una sola Session para todo el script (health check + las N requests de
+    # cada nivel de concurrencia): ver la nota en send_request() sobre por
+    # que "requests.post"/"requests.get" sueltos arruinan la medicion.
+    session = requests.Session()
+
     try:
-        health = requests.get(f"{args.api_url}/health", timeout=5)
+        health = session.get(f"{args.api_url}/health", timeout=5)
         health.raise_for_status()
         if not health.json().get("model_loaded"):
             print("Advertencia: el modelo no esta cargado en la API; los resultados podrian no ser representativos.")
@@ -123,7 +147,7 @@ def main() -> None:
     print(f"Prueba de carga contra {args.api_url}/predict")
     print("=" * 110)
     for concurrency in args.concurrency_levels:
-        resultado = run_load_test(args.api_url, args.n_requests, concurrency)
+        resultado = run_load_test(session, args.api_url, args.n_requests, concurrency)
         print_resultado(resultado)
     print("=" * 110)
 

@@ -295,6 +295,27 @@ condiciones de un despliegue real (recursos compartidos y latencia de red del
 free tier de Render). Sirve para detectar cuellos de botella de la aplicación
 —como el que se encontró y corrigió aquí—, no como un SLA de producción.
 
+> **Bug encontrado y corregido en la herramienta de prueba (no en la API):** al
+> volver a correr `tests/load_test.py` en una sesión posterior, la latencia
+> medida daba ~2048 ms **planos en los tres niveles de concurrencia**, ~100x
+> peor que la tabla de arriba y sin el patrón esperado (más concurrencia →
+> más latencia). La causa era el propio script: usaba `requests.post(...)`
+> suelto, que crea una `Session` nueva en cada llamada; en Windows, cada
+> `Session` nueva dispara una detección de proxy del sistema (WinHTTP) que
+> puede tardar 1-2 segundos, un costo que no tiene nada que ver con la API y
+> que antes se pagaba en *cada una* de las N requests. Se corrigió
+> reutilizando una única `Session` para todas las requests del script y
+> agregando una fase de *warm-up* (una request descartada por cada worker
+> thread antes de empezar a medir), ya que cada thread nuevo del
+> `ThreadPoolExecutor` paga ese costo por separado la primera vez que lo usa.
+> Con la corrección, concurrencia=1 bajó de ~2048 ms a ~3 ms de latencia
+> mediana. A concurrencia 10 y 50 todavía aparecen ocasionalmente 1-2
+> outliers de ~2 s en el máximo (no en la mediana ni, en general, en el p95),
+> aparentemente por reconexiones esporádicas del mismo origen — se documenta
+> como limitación conocida de correr esta prueba en Windows en vez de
+> intentar eliminarla por completo, ya que es un artefacto del entorno
+> cliente, no del servidor.
+
 Para reproducirla:
 
 ```bash
